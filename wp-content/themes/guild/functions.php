@@ -494,19 +494,47 @@ add_action('wp_ajax_nopriv_expert_filter', 'expert_filter');
 function expert_filter(){
     $meta_query = [];
 
-    if (!empty($_POST['location'])) {
+    if (!empty($_POST['sector'])) {
+        $sector_id = sanitize_text_field($_POST['sector']);
         $meta_query[] = [
-            'key'     => 'location',
-            'value'   => sanitize_text_field($_POST['location']),
-            'compare' => '='
+            'relation' => 'OR',
+            [
+                'key'     => 'expertise',
+                'value'   => $sector_id,
+                'compare' => '='
+            ],
+            [
+                'key'     => 'expertise',
+                'value'   => '"' . $sector_id . '"',
+                'compare' => 'LIKE'
+            ],
+            [
+                'key'     => 'expertise',
+                'value'   => $sector_id,
+                'compare' => 'LIKE'
+            ]
         ];
     }
 
-    if (!empty($_POST['sector'])) {
+    if (!empty($_POST['location'])) {
+        $location_id = sanitize_text_field($_POST['location']);
         $meta_query[] = [
-            'key'     => 'industry_expertise',
-            'value'   => sanitize_text_field($_POST['sector']),
-            'compare' => 'LIKE'
+            'relation' => 'OR',
+            [
+                'key'     => 'location',
+                'value'   => $location_id,
+                'compare' => '='
+            ],
+            [
+                'key'     => 'location',
+                'value'   => '"' . $location_id . '"',
+                'compare' => 'LIKE'
+            ],
+            [
+                'key'     => 'location',
+                'value'   => $location_id,
+                'compare' => 'LIKE'
+            ]
         ];
     }
 
@@ -519,13 +547,10 @@ function expert_filter(){
         'order'          => 'ASC',
     ];
 
-    if(count($meta_query) > 1) {
-
-        $meta_query > array_merge(['relation', 'OR'], $meta_query);
-
-    }
-
     if (!empty($meta_query)) {
+        if (count($meta_query) > 1) {
+            $meta_query['relation'] = 'AND';
+        }
         $args['meta_query'] = $meta_query;
     }
 
@@ -535,47 +560,57 @@ function expert_filter(){
 
     if ( $query->have_posts() ) :
         while ( $query->have_posts() ) : $query->the_post();
-        $profile_image = get_field('profile_image');
-        //var_dump($profile_image);
+            $query_id      = get_the_ID();
+            $profile_image = get_field('profile_image', $query_id);
+            $position      = get_field('position', $query_id);
+            $location      = get_field('location', $query_id);
+            $email         = get_field('email', $query_id);
+            $contact       = get_field('contact_no', $query_id);
+            $linkedin      = get_field('linkedin_url', $query_id);
+
+            $img_src = '';
+            if (is_array($profile_image)) {
+                $img_src = $profile_image['url'];
+            } elseif (is_string($profile_image)) {
+                $img_src = $profile_image;
+            }
     ?>
+
         <div class="col-md-4 mb-5">
-            <div class="team-box-inner">
-                <div class="team-img">
-                    <a href="<?= esc_url(get_permalink()) ?>">
-                        <?php echo wp_get_attachment_image ( 
-                            $profile_image['id'],
-                            'thumbnail', 
-                            false, 
-                            [
-                                "class" => "team-img-single",
-                                "alt"=> esc_attr($query->post_title)
-                            ] 
-                        ); ?>                
+            <div class="team-box-inner text-center">
+                <div class="team-img mb-3 position-relative rounded-circle mx-auto overflow-hidden shadow-sm" style="width: 220px; height: 220px;">
+                    <a href="<?php echo esc_url(get_permalink()); ?>">
+                        <?php if (!empty($img_src)) : ?>
+                            <img src="<?php echo esc_url($img_src); ?>" class="img-fluid w-100 h-100 object-fit-cover" alt="<?php echo esc_attr(get_the_title()); ?>">
+                        <?php endif; ?>
                     </a>
                 </div>
+
                 <div class="member-name">
-                    <a href="<?= esc_url(get_permalink()) ?>"><?= get_the_Title(); ?></a>
+                    <a href="<?php echo esc_url(get_permalink()); ?>" class="text-dark text-decoration-underline"><?php the_title(); ?></a>
                 </div>
-                <div class="member-desigantion"><?php echo get_field('title',$query->ID); ?></div>
-                <div class="member-address"><?php echo get_field('location',$query->ID)->post_title; ?></div>
+
+                <div class="member-desigantion"><?php echo !empty($position) ? esc_html($position) : ''; ?></div>
+
+                <div class="member-address"><?php echo is_object($location) ? esc_html($location->post_title) : ''; ?></div>
+
                 <div class="social-icons text-center">
-                    <ul class="experts-socials p-0 align-items-center">
-                        
-                    <?php if($email = get_field('email',$query->ID)){ ?>
-                        <li><a href="mailto:<?= $email; ?>"><i class="fa fa-envelope" aria-hidden="true"></i></a></li>
-                    <?php } ?>
-                    <?php if($contact = get_field('contact_no',$query->ID)){ ?>
-                        <li><a href="tel:<?= $contact; ?>"><i class="fa fa-phone" aria-hidden="true"></i></a></li>
-                    <?php } ?>
-                    <?php if($linkedin = get_field('linkedin',$query->ID)){ ?>
-                        <li><a href="<?= $linkedin;?>" target="_blank"><i class="fab fa-linkedin" aria-hidden="true"></i></a></li>
-                    <?php } ?>
+                    <ul class="experts-socials list-inline p-0 m-0 d-flex justify-content-center gap-2">
+                        <?php if ($email) : ?>
+                            <li class="list-inline-item"><a href="mailto:<?php echo esc_attr($email); ?>" class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #0f8a5f; border: none;"><i class="fa fa-envelope text-white"></i></a></li>
+                        <?php endif; ?>
+                        <?php if ($contact) : ?>
+                            <li class="list-inline-item"><a href="tel:<?php echo esc_attr($contact); ?>" class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #0f8a5f; border: none;"><i class="fa fa-phone text-white"></i></a></li>
+                        <?php endif; ?>
+                        <?php if ($linkedin) : ?>
+                            <li class="list-inline-item"><a href="<?php echo esc_url($linkedin); ?>" target="_blank" class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #0f8a5f; border: none;"><i class="fab fa-linkedin-in text-white"></i></a></li>
+                        <?php endif; ?>
                     </ul>
                 </div>
             </div>
         </div>
     <?php
-            endwhile;
+        endwhile;
             wp_reset_postdata();
         else:
             echo 'No Expert Found.';

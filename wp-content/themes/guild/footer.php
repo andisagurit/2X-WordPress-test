@@ -1,14 +1,16 @@
 </div> <!-- closes <div class=container"> -->
 
 <!-- Footer -->
-<footer id="footer" class="bg-black text-white text-md-left text-left">
+<footer id="footer" class="bg-black text-white text-md-left text-left py-5">
     <div class="container">
 
         <div class="row position-relative align-items-center pb-3">
-            <div class="col-3">
-                <img src="<?php echo get_template_directory_uri() ?>/images/the_iron_claw_syndicate_transparent_logo.png" alt="logo">
+            <div class="col-md-3 col-12 mb-3 mb-md-0">
+                <img src="<?php echo esc_url( get_template_directory_uri() . '/images/the_iron_claw_syndicate_transparent_logo.png' ); ?>" alt="logo" class="img-fluid" style="max-height: 120px;">
             </div>
-            <div class="col-9">
+            <div class="col-md-9 col-12">
+                <p class="wp-block-paragraph"><strong>"Precision. Power. Paws."</strong></p>
+                <p class="wp-block-paragraph"><em>Operating in the shadows so you can rule the light.</em></p>
                 <?php if (is_active_sidebar('custom-footer-text-widget')): ?>
                     <div id="header-widget-area" class="chw-widget-area widget-area pt-3" role="complementary">
                         <?php dynamic_sidebar('custom-footer-text-widget');?>
